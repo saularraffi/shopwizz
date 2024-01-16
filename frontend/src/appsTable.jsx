@@ -27,7 +27,7 @@ export default function AppsTable() {
 
     function getApps() {
         axios
-            .get("http://127.0.0.1:8000/test")
+            .get("http://127.0.0.1:3000/apps")
             .then((res) => {
                 console.log(res.data);
                 setApps(res.data);
