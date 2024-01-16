@@ -1,4 +1,4 @@
-import AppsTable from "./appsTable";
+import AppsTable from "./AppsTable";
 
 function App() {
     return (
