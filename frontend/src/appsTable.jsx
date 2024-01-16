@@ -6,8 +6,8 @@ export default function AppsTable() {
 
     function getApps() {
         axios
-            .get("http://localhost:3000/_default")
-            .then((res) => setApps(res.data))
+            .get("http://127.0.0.1:8000/")
+            .then((res) => console.log(res))
             .catch((error) => console.log(error));
     }
 
