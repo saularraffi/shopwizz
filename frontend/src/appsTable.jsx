@@ -19,6 +19,8 @@ import Select from "@mui/material/Select";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 
+import StarIcon from "@mui/icons-material/Star";
+
 const tableHeaderStyle = {
     fontWeight: "bold",
 };
@@ -30,6 +32,7 @@ export default function AppsTable() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [sortType, setSortType] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedRating, setSelectedRating] = useState(-1);
 
     const numberOfApps = marketplaceData?.numberOfApps || 0;
     const categories = marketplaceData?.categories;
@@ -51,6 +54,10 @@ export default function AppsTable() {
         setSelectedCategory(event.target.value);
     }
 
+    function handleRatingSelection(event) {
+        setSelectedRating(event.target.value);
+    }
+
     function handlePagination(event, value) {
         setPage(value);
     }
@@ -65,9 +72,12 @@ export default function AppsTable() {
                 ? `&category=${selectedCategory}`
                 : "";
 
+        const ratingQuery =
+            selectedRating !== -1 ? `&rating=${selectedRating}` : "";
+
         axios
             .get(
-                `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}${categoryQuery}`
+                `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}${categoryQuery}${ratingQuery}`
             )
             .then((res) => {
                 const apps =
@@ -88,7 +98,7 @@ export default function AppsTable() {
 
     useEffect(() => {
         getApps();
-    }, [itemsPerPage, page, selectedCategory]);
+    }, [itemsPerPage, page, sortType, selectedCategory, selectedRating]);
 
     useEffect(() => {
         getMarketplaceInfo();
@@ -114,7 +124,14 @@ export default function AppsTable() {
                 </FormControl>
             </Box>
 
-            <Box sx={{ minWidth: 300, marginBottom: "10px", float: "left" }}>
+            <Box
+                sx={{
+                    minWidth: 300,
+                    marginRight: "10px",
+                    marginBottom: "10px",
+                    float: "left",
+                }}
+            >
                 <FormControl fullWidth>
                     <InputLabel>Categories</InputLabel>
                     <Select
@@ -125,6 +142,50 @@ export default function AppsTable() {
                         {categories?.map((category) => (
                             <MenuItem value={category}>{category}</MenuItem>
                         ))}
+                    </Select>
+                </FormControl>
+            </Box>
+
+            <Box
+                sx={{
+                    minWidth: 120,
+                    maxWidth: 60,
+                    marginRight: "10px",
+                    marginBottom: "10px",
+                    float: "left",
+                }}
+            >
+                <FormControl fullWidth>
+                    <InputLabel>Rating</InputLabel>
+                    <Select label="Rating" onChange={handleRatingSelection}>
+                        <MenuItem value={-1}>None</MenuItem>
+                        <MenuItem value={1}>
+                            1.0 <StarIcon sx={{ color: "#EAD419" }} />
+                        </MenuItem>
+                        <MenuItem value={2}>
+                            2.0
+                            {Array.from(Array(2), (e, i) => (
+                                <StarIcon sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={3}>
+                            3.0
+                            {Array.from(Array(3), (e, i) => (
+                                <StarIcon sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={4}>
+                            4.0
+                            {Array.from(Array(4), (e, i) => (
+                                <StarIcon sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={5}>
+                            5.0
+                            {Array.from(Array(5), (e, i) => (
+                                <StarIcon sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
                     </Select>
                 </FormControl>
             </Box>

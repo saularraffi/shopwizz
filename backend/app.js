@@ -1,10 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
 const cors = require("cors");
 
 const app = express();
 
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 const ShopifyAppSchema = mongoose.Schema({
     id: String,
@@ -37,15 +40,17 @@ app.get("/api/apps", async (req, res) => {
     const page = parseInt(req.query.page);
     const pageSize = parseInt(req.query.pageSize);
     const category = req.query.category;
+    const rating = req.query.rating;
 
-    const fileter = {};
-    if (category) fileter.categories = { $in: [category] };
+    const filter = {};
+    if (category) filter.categories = { $in: [category] };
+    if (rating) filter.rating = { $gte: rating, $lt: Number(rating) + 1 };
 
     // Calculate the start and end indexes for the requested page
     const startIndex = (page - 1) * pageSize;
     const endIndex = page * pageSize;
 
-    const apps = await ShopifyApp.find(fileter);
+    const apps = await ShopifyApp.find(filter);
     const appsSubset = apps.slice(startIndex, endIndex);
 
     res.send(appsSubset);
