@@ -25,8 +25,15 @@ const tableHeaderStyle = {
 
 export default function AppsTable() {
     const [apps, setApps] = useState([]);
+    const [marketplaceData, setMarketplaceData] = useState({});
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    const numberOfApps = marketplaceData?.numberOfApps || 0;
+    const categories = marketplaceData?.categories;
+    const numberOfPages = Math.ceil(
+        marketplaceData.numberOfApps / itemsPerPage
+    );
 
     function handleSortByRating(event) {
         const sortType = event.target.value;
@@ -50,10 +57,16 @@ export default function AppsTable() {
             .get(
                 `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}`
             )
-            .then((res) => {
-                console.log(res.data);
-                setApps(res.data);
-            })
+            .then((res) => setApps(res.data))
+            .catch((error) => console.log(error));
+    }
+
+    function getMarketplaceInfo() {
+        axios
+            .get(
+                `http://127.0.0.1:8080/api/marketplace?page=${page}&pageSize=${itemsPerPage}`
+            )
+            .then((res) => setMarketplaceData(res.data))
             .catch((error) => console.log(error));
     }
 
@@ -61,8 +74,12 @@ export default function AppsTable() {
         getApps();
     }, [itemsPerPage, page]);
 
+    useEffect(() => {
+        getMarketplaceInfo();
+    }, []);
+
     return (
-        <Container>
+        <Container sx={{ marginBottom: "100px" }}>
             <Box sx={{ minWidth: 120, maxWidth: 60, marginBottom: "10px" }}>
                 <FormControl fullWidth>
                     <InputLabel>Sort</InputLabel>
@@ -131,35 +148,36 @@ export default function AppsTable() {
                 </Table>
             </TableContainer>
 
-            <Stack sx={{ marginTop: "20px", float: "right" }} spacing={2}>
-                <Pagination
-                    onChange={handlePagination}
-                    count={20}
-                    page={page}
-                    color="primary"
-                />
-            </Stack>
-            <Box
-                sx={{
-                    minWidth: 120,
-                    maxWidth: 60,
-                    marginTop: "10px",
-                    float: "right",
-                }}
-            >
-                <FormControl fullWidth>
-                    <InputLabel>Size</InputLabel>
-                    <Select
-                        label="Items Per Page"
-                        onChange={handleSetItemsPerPage}
-                        defaultValue={10}
-                    >
-                        <MenuItem value={10}>10</MenuItem>
-                        <MenuItem value={25}>25</MenuItem>
-                        <MenuItem value={50}>50</MenuItem>
-                        <MenuItem value={100}>100</MenuItem>
-                    </Select>
-                </FormControl>
+            <Box sx={{ marginTop: "20px", float: "right" }}>
+                <Stack sx={{ float: "right" }} spacing={2}>
+                    <Pagination
+                        onChange={handlePagination}
+                        count={numberOfPages}
+                        page={page}
+                        color="primary"
+                    />
+                </Stack>
+                <Box
+                    sx={{
+                        minWidth: 120,
+                        maxWidth: 60,
+                        float: "right",
+                    }}
+                >
+                    <FormControl fullWidth>
+                        <InputLabel>Size</InputLabel>
+                        <Select
+                            label="Items Per Page"
+                            onChange={handleSetItemsPerPage}
+                            defaultValue={10}
+                        >
+                            <MenuItem value={10}>10</MenuItem>
+                            <MenuItem value={25}>25</MenuItem>
+                            <MenuItem value={50}>50</MenuItem>
+                            <MenuItem value={100}>100</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
             </Box>
         </Container>
     );

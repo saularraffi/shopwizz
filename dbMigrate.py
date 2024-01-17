@@ -20,9 +20,23 @@ if __name__ == "__main__":
   
     # Get the database
     dbname = getDatabase()
-    collectionName = dbname["apps"]
+    appsCollection = dbname["apps"]
+    marketplaceCollection = dbname["marketplacestats"]
 
     apps = db.all()
-    
+    appsCollection.insert_many(apps)
+
+    categoriesTable = set()
     for app in apps:
-        collectionName.insert_many([app])
+        for category in app['categories']:
+            if category not in categoriesTable:
+                categoriesTable.add(category)
+    
+    numberOfApps = len(apps)
+    categories = list(categoriesTable)
+    categories.sort()
+
+    marketplaceCollection.insert_one({
+        'numberOfApps': numberOfApps,
+        'categories': categories
+    })

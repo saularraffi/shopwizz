@@ -21,7 +21,17 @@ const ShopifyAppSchema = mongoose.Schema({
     reviews: Object,
 });
 
-const ShopifyApp = mongoose.model("App", ShopifyAppSchema);
+const ShopifyMarketplaceSchema = mongoose.Schema({
+    id: String,
+    numberOfApps: Number,
+    categories: Array,
+});
+
+const ShopifyApp = mongoose.model("app", ShopifyAppSchema);
+const ShopifyMarketplace = mongoose.model(
+    "marketplacestat",
+    ShopifyMarketplaceSchema
+);
 
 app.get("/api/apps", async (req, res) => {
     const page = parseInt(req.query.page);
@@ -35,6 +45,13 @@ app.get("/api/apps", async (req, res) => {
     const appsSubset = apps.slice(startIndex, endIndex);
 
     res.send(appsSubset);
+});
+
+app.get("/api/marketplace", async (req, res) => {
+    const marketplaceInfo = await ShopifyMarketplace.findOne();
+    console.log(marketplaceInfo);
+
+    res.send(marketplaceInfo);
 });
 
 const host = "0.0.0.0";
