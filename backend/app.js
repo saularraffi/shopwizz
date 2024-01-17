@@ -36,12 +36,16 @@ const ShopifyMarketplace = mongoose.model(
 app.get("/api/apps", async (req, res) => {
     const page = parseInt(req.query.page);
     const pageSize = parseInt(req.query.pageSize);
+    const category = req.query.category;
+
+    const fileter = {};
+    if (category) fileter.categories = { $in: [category] };
 
     // Calculate the start and end indexes for the requested page
     const startIndex = (page - 1) * pageSize;
     const endIndex = page * pageSize;
 
-    const apps = await ShopifyApp.find({});
+    const apps = await ShopifyApp.find(fileter);
     const appsSubset = apps.slice(startIndex, endIndex);
 
     res.send(appsSubset);
@@ -49,8 +53,6 @@ app.get("/api/apps", async (req, res) => {
 
 app.get("/api/marketplace", async (req, res) => {
     const marketplaceInfo = await ShopifyMarketplace.findOne();
-    console.log(marketplaceInfo);
-
     res.send(marketplaceInfo);
 });
 

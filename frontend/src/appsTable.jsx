@@ -28,20 +28,27 @@ export default function AppsTable() {
     const [marketplaceData, setMarketplaceData] = useState({});
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [sortType, setSortType] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("");
 
     const numberOfApps = marketplaceData?.numberOfApps || 0;
     const categories = marketplaceData?.categories;
-    const numberOfPages = Math.ceil(
-        marketplaceData.numberOfApps / itemsPerPage
-    );
+    const numberOfPages = Math.ceil(numberOfApps / itemsPerPage);
+
+    function getSortedApps(data, ascending) {
+        if (ascending) return [...data].sort((a, b) => a.rating - b.rating);
+        else return [...data].sort((a, b) => b.rating - a.rating);
+    }
 
     function handleSortByRating(event) {
-        const sortType = event.target.value;
-        let sortedData = [];
-        if (sortType === "ASCENDING")
-            sortedData = [...apps].sort((a, b) => a.rating - b.rating);
-        else sortedData = [...apps].sort((a, b) => b.rating - a.rating);
-        setApps(sortedData);
+        const ascending = event.target.value === "ASCENDING";
+        setSortType(event.target.value);
+        const sortedApps = getSortedApps(apps, ascending);
+        setApps(sortedApps);
+    }
+
+    function handleCategorySelection(event) {
+        setSelectedCategory(event.target.value);
     }
 
     function handlePagination(event, value) {
@@ -53,26 +60,35 @@ export default function AppsTable() {
     }
 
     function getApps() {
+        const categoryQuery =
+            selectedCategory !== "" && selectedCategory != "None"
+                ? `&category=${selectedCategory}`
+                : "";
+
         axios
             .get(
-                `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}`
+                `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}${categoryQuery}`
             )
-            .then((res) => setApps(res.data))
+            .then((res) => {
+                const apps =
+                    sortType === ""
+                        ? res.data
+                        : getSortedApps(res.data, sortType === "ASCENDING");
+                setApps(apps);
+            })
             .catch((error) => console.log(error));
     }
 
     function getMarketplaceInfo() {
         axios
-            .get(
-                `http://127.0.0.1:8080/api/marketplace?page=${page}&pageSize=${itemsPerPage}`
-            )
+            .get("http://127.0.0.1:8080/api/marketplace")
             .then((res) => setMarketplaceData(res.data))
             .catch((error) => console.log(error));
     }
 
     useEffect(() => {
         getApps();
-    }, [itemsPerPage, page]);
+    }, [itemsPerPage, page, selectedCategory]);
 
     useEffect(() => {
         getMarketplaceInfo();
@@ -80,12 +96,35 @@ export default function AppsTable() {
 
     return (
         <Container sx={{ marginBottom: "100px" }}>
-            <Box sx={{ minWidth: 120, maxWidth: 60, marginBottom: "10px" }}>
+            <Box
+                sx={{
+                    minWidth: 120,
+                    maxWidth: 60,
+                    marginRight: "10px",
+                    marginBottom: "10px",
+                    float: "left",
+                }}
+            >
                 <FormControl fullWidth>
                     <InputLabel>Sort</InputLabel>
                     <Select label="Sort" onChange={handleSortByRating}>
                         <MenuItem value={"ASCENDING"}>Ascending</MenuItem>
                         <MenuItem value={"DESCENDING"}>Descending</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+
+            <Box sx={{ minWidth: 300, marginBottom: "10px", float: "left" }}>
+                <FormControl fullWidth>
+                    <InputLabel>Categories</InputLabel>
+                    <Select
+                        label="Categories"
+                        onChange={handleCategorySelection}
+                    >
+                        <MenuItem value="None">None</MenuItem>
+                        {categories?.map((category) => (
+                            <MenuItem value={category}>{category}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             </Box>
