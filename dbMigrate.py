@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 from tinydb import TinyDB, Query
-import os
 
 DB_FILE = "shopify_apps.json"
 db = TinyDB(DB_FILE)
