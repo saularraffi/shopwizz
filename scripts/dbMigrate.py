@@ -1,7 +1,9 @@
 from pymongo import MongoClient
 from tinydb import TinyDB, Query
+import os
 
-DB_FILE = "shopify_apps.json"
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+DB_FILE = os.path.join(SCRIPT_PATH, "..", "shopify_apps.json")
 db = TinyDB(DB_FILE)
 
 def getDatabase():
@@ -20,10 +22,23 @@ if __name__ == "__main__":
     # Get the database
     dbname = getDatabase()
     appsCollection = dbname["apps"]
+    reviewsCollection = dbname["reviews"]
     marketplaceCollection = dbname["marketplacestats"]
 
+    appsCollection.drop()
+    reviewsCollection.drop()
+    marketplaceCollection.drop()
+
     apps = db.all()
-    appsCollection.insert_many(apps)
+
+    for app in apps:
+        reviews = app['reviews']
+        del app['reviews']
+        mongoApp = appsCollection.insert_one(app)
+        reviewsCollection.insert_one({
+            'appId': mongoApp.inserted_id,
+            'reviews': reviews
+        })
 
     categoriesTable = set()
     for app in apps:
