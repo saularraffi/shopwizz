@@ -31,6 +31,7 @@ You are provided with a list of reviews for a Shopify app.  Reviews are each wra
         {
             "overview": String,
             "severity": Number,
+            "frequency": Number,
             "details": List<String>
         }
     ]
@@ -39,7 +40,8 @@ You are provided with a list of reviews for a Shopify app.  Reviews are each wra
 Here is the purpose of each JSON field:
 
 overview: A description of the problem.
-severity: A numerical score between 0 and 100 that denotes how frequent users complain about this problem.
+severity: A numerical score between 0 and 100 that reflects how sever this problem is to users.
+frequency: The frequency of the problem being mention. Calculate this by taking the number of review that mention this problem and dividing by the total number of reviews.
 details: A list of additional details regarding this problem. Be specific and do not directly quote from the reviews. Provide numerical values when possible.
 """
 
@@ -71,7 +73,7 @@ def countTokens(reviews):
     return math.floor(chars/4)
 
 class GptReviewAnalyzer:
-    def __init__(self, reviews, tokenLimit=7000):
+    def __init__(self, reviews, tokenLimit=8000):
         self.reviews = sorted(reviews, key=len)
         self.tokenLimit = tokenLimit
         self.userPrompt = self.buildUserPrompt()       

@@ -7,8 +7,8 @@ DB_FILE = os.path.join(SCRIPT_PATH, "..", "shopify_apps.json")
 db = TinyDB(DB_FILE)
 
 App = Query()
-# url = 'https://apps.shopify.com/subliminator'
-url = 'https://apps.shopify.com/klaviyo-email-marketing'
+url = 'https://apps.shopify.com/subliminator'
+# url = 'https://apps.shopify.com/klaviyo-email-marketing'
 app = db.search(App.url == url)
 reviewObj = app[0]['reviews']
 
@@ -29,6 +29,7 @@ if "error" in response:
 for problem in response['problems']:
     print("Problem Overview: ", problem['overview'])
     print("Severity Score  : ", problem['severity'])
+    print("Frequency       : ", problem['frequency'])
     print("Details: ")
     for detail in problem['details']:
         print("\t*", detail)
