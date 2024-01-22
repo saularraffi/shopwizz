@@ -17,7 +17,7 @@ reviews = []
 for star, _ in reviewObj.items():
     if star == "1-star" or star == "2-star":
         for review in reviewObj[star]['content']:
-            if len(review) < 1000: reviews.append(review)
+            reviews.append(review)
 
 reviewAnalyzer = GptReviewAnalyzer(reviews)
 response = reviewAnalyzer.run()
