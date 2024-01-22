@@ -8,7 +8,7 @@
     - Launch date of app (older the better) (normalize data)
 	- Rating skew (more skewed to the bottom better than skewed to the middle??)
 
-RFI = a(Rating) * b(Review Count) + c(Frequency)  + d(Launch Days)
+RFI = (b(Review Count) / a(Rating)) + c(Frequency)  + d(Launch Days)
 Frequency = a(Frequency1) + b(Frequency2) + c(Frequency2)
 
 RFI = (aR * bC) + cF + dD
@@ -18,17 +18,19 @@ F = aF1 + bF2 + cF3
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
+from math import floor
 
 launchDateOffsetMinMax = ()
 reviewCountsMinMax = ()
+rfiScoresMinMax = ()
 
 def getDatabase():
     CONNECTION_STRING = "mongodb://localhost:27017/shopifyAppMarketplace"
     client = MongoClient(CONNECTION_STRING)
     return client['shopifyAppMarketplace']
 
-def normalize(x, xMin, xMax):
-    return round(((x - xMin) / (xMax - xMin)) * 100, 1)
+def normalize(x, xMin, xMax, multiplier):
+    return round(((x - xMin) / (xMax - xMin)) * multiplier, 1)
 
 def getLaunchDateOffsetList(apps):
     offsets = []
@@ -39,33 +41,23 @@ def getLaunchDateOffsetList(apps):
             offsets.append(offset)
     return offsets
 
-def getReviewsCountList(allReviews):
+def getReviewsCountList(apps):
     reviewCounts = []
-    for reviews in allReviews:
-        count = getReviewCount(reviews)
-        reviewCounts.append(count)
+    for app in apps:
+        count = app['reviewCount']
+        if count is not None:
+            reviewCounts.append(count)
     return reviewCounts
 
-def setMinsAndMaxes(appsCollection, reviewsCollection):
+def setMinsAndMaxes(apps):
     global launchDateOffsetMinMax
     global reviewCountsMinMax
 
-    apps = appsCollection.find({})
-    reviews = reviewsCollection.find({})
-
     launchDateOffsetList = getLaunchDateOffsetList(apps)
-    reviewsCountList = getReviewsCountList(reviews)
+    reviewsCountList = getReviewsCountList(apps)
 
     launchDateOffsetMinMax = (min(launchDateOffsetList), max(launchDateOffsetList))
     reviewCountsMinMax = (min(reviewsCountList), max(reviewsCountList))
-
-def getRfiScore():
-    x = [343,634,322,113,600,844]
-    xMin = min(x)
-    xMax = max(x)
-    
-    for num in x:
-        print(normalize(num, xMin, xMax))
 
 def getDaysOffset(dateString):
     try:
@@ -76,51 +68,67 @@ def getDaysOffset(dateString):
     except Exception as e:
         return -1
 
-def getReviewCount(reviews):
-    reviewCount = 0
-    for star, _ in reviews['reviews'].items():
-        count = reviews['reviews'][star]['count']
-        reviewCount += count
-    return reviewCount
-
 def getAppVariableData(app, reviews):
     rating = app['rating']
-    frequencies = [.53, .40, .21]
-    launchDayOffset = getDaysOffset(app['dateLaunched'])
-    normalizedLaunchDaysOffset = normalize(launchDayOffset, launchDateOffsetMinMax[0], launchDateOffsetMinMax[1])
-    reviewCount = getReviewCount(reviews)
-    reviewCountNormalized = normalize(reviewCount, reviewCountsMinMax[0], reviewCountsMinMax[1])
+    frequencies = [0, 0, 0]
+    
+    offset = getDaysOffset(app['dateLaunched'])
+    launchDayOffset = offset if offset != -1 else 0
+    normalizedLaunchDaysOffset = normalize(launchDayOffset, launchDateOffsetMinMax[0], launchDateOffsetMinMax[1], 100)
+    
+    reviewCount = app['reviewCount'] if app['reviewCount'] is not None else 0
+    reviewCountNormalized = normalize(reviewCount, reviewCountsMinMax[0], reviewCountsMinMax[1], 1000)
     
     return (rating, normalizedLaunchDaysOffset, reviewCountNormalized, frequencies)
 
-def getRfiScore():
-    pass
+def getRfiScore(rating, launchDayOffset, reviewCount, frequencies):
+    a = 5
+    b = 8
+    c = 7
+    d = 2
+    c1 = 5
+    c2 = 3
+    c3 = 1
+
+    frequencyScore = c1*frequencies[0] + c2*frequencies[1] + c3*frequencies[2]
+    rfiScore = floor((a*reviewCount / b*rating) + c*frequencyScore + d*launchDayOffset)
+
+    # print("review count:", reviewCount, a*reviewCount)
+    # print("rating:", rating, b*rating)
+    # print("frequency:", frequencyScore, c*frequencyScore)
+    # print("launch day offset:", launchDayOffset, d*launchDayOffset)
+    # print("RFI Score:", rfiScore, "\n")
+
+    return rfiScore
 
 def test():
     id = '65aea2afc4b6ba8b7ad8f051'
     app = appsCollection.find_one({'_id': ObjectId(id)})
     reviews = reviewsCollection.find_one({'appId': ObjectId(id)})
-
     (rating, launchDayOffset, reviewCount, frequencies) = getAppVariableData(app, reviews)
-
-    print("rating:", rating)
-    print("days offset:", launchDayOffset)
-    print("review count:", reviewCount)
 
 if __name__ == "__main__":
     dbname = getDatabase()
     appsCollection = dbname["apps"]
     reviewsCollection = dbname["reviews"]
-    setMinsAndMaxes(appsCollection, reviewsCollection)
+    apps = list(appsCollection.find({}))
+    setMinsAndMaxes(apps)
 
-    apps = appsCollection.find({})
+    rfiScores = []
 
     for app in apps:
         reviews = reviewsCollection.find_one({'appId': ObjectId(app['_id'])})
         (rating, launchDayOffset, reviewCount, frequencies) = getAppVariableData(app, reviews)
         
-        if reviewCount != 0:
-            print("rating:", rating)
-            print("days offset:", launchDayOffset)
-            print("review count:", reviewCount)
-            print("")
+        if reviewCount > 0:
+            rfiScore = getRfiScore(rating, launchDayOffset, reviewCount, frequencies)
+            rfiScores.append(rfiScore)
+    
+    rfiScoresMinMax = (min(rfiScores), max(rfiScores))
+    normalizedRfiScores = []
+    for score in rfiScores:
+        normalizedScore = normalize(score, rfiScoresMinMax[0], rfiScoresMinMax[1], 1000)
+        normalizedRfiScores.append(int(normalizedScore))
+    
+    normalizedRfiScores.sort()
+    print(normalizedRfiScores)
