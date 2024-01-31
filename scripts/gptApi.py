@@ -21,9 +21,11 @@ openai.organization = os.getenv("OPENAI_ORG_ID")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 GPT_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
-GPT_MODEL = 'gpt-4'
+GPT_4_MODEL = 'gpt-4'
+GPT_4_TURBO_MODEL = 'gpt-4-1106-preview'
+GPT_3_TURBO_MODEL = 'gpt-3.5-turbo-1106'
 
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT2 = """
 You are provided with a list of reviews for a Shopify app.  Reviews are each wrapped in triple quotation marks and delimited by a comma.  Analyze each review and provide a response, in JSON format, containing the top 3 problems users have with the app. The JSON response should have the following structure:
 
 {
@@ -43,6 +45,23 @@ overview: A description of the problem.
 severity: A numerical score between 0 and 100 that reflects how sever this problem is to users.
 frequency: The frequency of the problem being mention. Calculate this by taking the number of review that mention this problem and dividing by the total number of reviews.
 details: A list of additional details regarding this problem. Be specific and do not directly quote from the reviews. Provide numerical values when possible.
+"""
+
+SYSTEM_PROMPT = """You are provided with a list of reviews for a Shopify app.  
+Reviews are each wrapped in triple quotation marks and delimited by a comma.  
+Analyze each review and provide the top 3 problems users have with the app.
+Your response should be a JSON object called "problems" containing a list of 3 elements.
+
+The first column, called "overview", should describe the problem.
+
+The second column, called "severity", should be a numerical score between 0 and 100 that reflects how sever this problem is to users.
+
+The third column, called "frequency", should represent the frequency of the problem being mention.
+Calculate the "frequency" column by taking the number of review that mention this problem and dividing by the total number of reviews.
+
+The forth column, called "details", should be a list of between 3 and 5 items that specify additional details regarding this problem.
+
+Problems in the "problems" field should be ordered by the frequency and severity of the problem.
 """
 
 # DRAFT FUNCTION: Eventually take review sets that are too large and split the requests up to gpt
@@ -76,16 +95,33 @@ class GptReviewAnalyzer:
     def __init__(self, reviews, tokenLimit=8000):
         self.reviews = sorted(reviews, key=len)
         self.tokenLimit = tokenLimit
-        self.userPrompt = self.buildUserPrompt()       
+        self.userPrompt = self.buildUserPrompt()
 
     def run(self):
+        response = openai.ChatCompletion.create(
+            model=GPT_4_TURBO_MODEL,
+            messages=[
+                { 'role': 'system', 'content': SYSTEM_PROMPT },
+                { 'role': 'user', 'content': self.userPrompt }
+            ],
+            response_format={ "type": "json_object" },
+            temperature=0
+        )
+
+        if "error" in response:
+            return response
+                
+        responseContent = response['choices'][0]['message']['content']
+        return json.loads(responseContent)    
+
+    def runViaHttpRequest(self):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + openai.api_key,
         }
 
         jsonData = {
-            'model': GPT_MODEL,
+            'model': GPT_4_MODEL,
             'messages': [
                 { 'role': 'system', 'content': SYSTEM_PROMPT },
                 { 'role': 'user', 'content': self.userPrompt },
@@ -98,10 +134,10 @@ class GptReviewAnalyzer:
 
         if "error" in responseJson:
             return responseJson
-        
+                
         responseContent = responseJson['choices'][0]['message']['content']
         return json.loads(responseContent)
-
+    
     def enforceTokenCompliance(self):
         while countTokens(self.reviews) > self.tokenLimit:
             self.reviews.pop()
