@@ -2,8 +2,9 @@ from util import normalize, getDaysOffset
 from math import floor
 
 WEIGHTS = {
-    "rating": 8,
-    "daysActive": 2,
+    "rating1": 10,
+    "rating2": 8,
+    "daysActive": 1,
     "reviewCount": 5,
     "problemsFrequency": 7,
     "freq1": 5,
@@ -50,23 +51,31 @@ class RfiCalculator():
         F = aF1 + bF2 + cF3
         """
         
-        a = WEIGHTS['reviewCount']
-        b = WEIGHTS['rating']
-        c = WEIGHTS['problemsFrequency']
+        a = WEIGHTS['rating1']
+        b = WEIGHTS['rating2']
+        c = WEIGHTS['reviewCount']
+        # c = WEIGHTS['problemsFrequency']
         d = WEIGHTS['daysActive']
-        c1 = WEIGHTS['freq1']
-        c2 = WEIGHTS['freq2']
-        c3 = WEIGHTS['freq3']
+        # c1 = WEIGHTS['freq1']
+        # c2 = WEIGHTS['freq2']
+        # c3 = WEIGHTS['freq3']
 
-        frequencyScore = c1*self.problemsFrequencies[0] + c2*self.problemsFrequencies[1] + c3*self.problemsFrequencies[2]        
-        self.rfiScore = floor((a*self.normalizedReviewCount / b*self.rating) + c*frequencyScore + d*self.normalizedDaysActive)
+        # frequencyScore = c1*self.problemsFrequencies[0] + c2*self.problemsFrequencies[1] + c3*self.problemsFrequencies[2]        
+        # self.rfiScore = floor((a*self.normalizedReviewCount / b*self.rating) + c*frequencyScore + d*self.normalizedDaysActive)
+        self.rfiScore = (
+            floor(10*a / (1 + self.rating)) + 
+            floor((100*c*self.normalizedReviewCount / (1 + b*self.rating))) + 
+            d*self.normalizedDaysActive
+        )
         
-        # print("review count:", reviewCount, a*reviewCount)
-        # print("rating:", rating, b*rating)
-        # print("frequency:", frequencyScore, c*frequencyScore)
-        # print("launch day offset:", daysActive, d*daysActive)
-        # print("RFI Score:", rfiScore, "\n")
-    
+        # print("rating={} reviews={} duration={}".format(self.rating, self.normalizedReviewCount, self.normalizedDaysActive))
+        # print("part1={} part2={} part3={}".format(
+        #     floor(10*a / (1 + self.rating)),
+        #     floor((100*c*self.normalizedReviewCount / (1 + b*self.rating))),
+        #     d*self.normalizedDaysActive
+        # ))
+        # print("")
+
     def setAppVariableData(self):
         offset = getDaysOffset(self.app['dateLaunched'])
         daysActive = offset if offset != -1 else 0
@@ -82,7 +91,7 @@ class RfiCalculator():
             reviewCount,
             RfiCalculator.reviewCountsMinMax[0],
             RfiCalculator.reviewCountsMinMax[1],
-            1000
+            100
         )
         
         self.problemsFrequencies = [0, 0, 0]
