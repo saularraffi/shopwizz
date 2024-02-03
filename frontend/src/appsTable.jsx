@@ -10,17 +10,18 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
-
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 
 import StarIcon from "@mui/icons-material/Star";
+
+import ExpandableTableRow from "./ExpandableTableRow";
+import AppDetails from "./AppDetails";
 
 const tableHeaderStyle = {
     fontWeight: "bold",
@@ -163,7 +164,7 @@ export default function AppsTable() {
     ]);
 
     return (
-        <Container sx={{ marginBottom: "100px", marginTop: "50px" }}>
+        <Container sx={{ marginBottom: "100px" }}>
             <Box
                 sx={{
                     minWidth: 200,
@@ -274,6 +275,7 @@ export default function AppsTable() {
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
                     <TableHead>
                         <TableRow>
+                            <TableCell />
                             <TableCell style={tableHeaderStyle}>
                                 RFI Score
                             </TableCell>
@@ -292,39 +294,35 @@ export default function AppsTable() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {visibleApps?.map((row) => (
-                            <TableRow
-                                key={row.name}
-                                sx={{
-                                    "&:last-child td, &:last-child th": {
-                                        border: 0,
-                                    },
-                                }}
+                        {visibleApps?.map((app) => (
+                            <ExpandableTableRow
+                                key={app._id}
+                                appDetailsComponent={<AppDetails app={app} />}
                             >
-                                <TableCell>{row.rfiScore}</TableCell>
+                                <TableCell>{app.rfiScore}</TableCell>
                                 <TableCell component="th" scope="row">
                                     <img
                                         style={{ width: "60px" }}
-                                        src={row.imageUrl}
+                                        src={app.imageUrl}
                                         alt="Italian Trulli"
                                     />
                                 </TableCell>
                                 <TableCell align="right">
                                     <a
-                                        href={row.url}
+                                        href={app.url}
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        {row.title}
+                                        {app.title}
                                     </a>
                                 </TableCell>
                                 <TableCell align="right">
-                                    {row.rating}
+                                    {app.rating}
                                 </TableCell>
                                 <TableCell align="right">
-                                    {row.reviewCount}
+                                    {app.reviewCount}
                                 </TableCell>
-                            </TableRow>
+                            </ExpandableTableRow>
                         ))}
                     </TableBody>
                 </Table>
