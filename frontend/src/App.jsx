@@ -4,9 +4,9 @@ import { Container } from "@mui/material";
 function App() {
     return (
         <>
-            <Container sx={{ marginBottom: "20px" }}>
+            <Container sx={{ marginBottom: "20px", marginTop: "20px" }}>
                 <img
-                    style={{ width: "350px" }}
+                    style={{ width: "250px" }}
                     src="/shopwizz_logo_full.png"
                 ></img>
             </Container>
