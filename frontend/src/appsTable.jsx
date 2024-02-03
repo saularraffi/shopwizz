@@ -9,6 +9,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
 
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
@@ -20,6 +21,7 @@ import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 
 import StarIcon from "@mui/icons-material/Star";
+import { pink } from "@mui/material/colors";
 
 const tableHeaderStyle = {
     fontWeight: "bold",
@@ -28,16 +30,13 @@ const tableHeaderStyle = {
 export default function AppsTable() {
     const [apps, setApps] = useState([]);
     const [visibleApps, setVisibleApps] = useState([]);
-    const [marketplaceData, setMarketplaceData] = useState({});
+    const [categories, setCategories] = useState([]);
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selectedSortType, setSelectedSortType] = useState(null);
     const [selectedRating, setSelectedRating] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
-
-    const numberOfApps = marketplaceData?.numberOfApps || 0;
-    const categories = marketplaceData?.categories;
-    const numberOfPages = Math.ceil(numberOfApps / itemsPerPage);
+    const [numberOfPages, setNumberOfPages] = useState(0);
 
     function getSortedApps(appsList) {
         switch (selectedSortType) {
@@ -81,6 +80,12 @@ export default function AppsTable() {
         return filtered;
     }
 
+    function handleClearFilters() {
+        setSelectedRating(null);
+        setSelectedCategory(null);
+        setSelectedSortType(null);
+    }
+
     function handleRatingSelection(event) {
         const rating = event.target.value;
         setSelectedRating(rating);
@@ -109,6 +114,7 @@ export default function AppsTable() {
         const endIndex = page * itemsPerPage;
         const appsSubset = appsList.slice(startIndex, endIndex);
 
+        setNumberOfPages(Math.ceil(appsList.length / itemsPerPage));
         setVisibleApps(appsSubset);
     }
 
@@ -136,8 +142,8 @@ export default function AppsTable() {
 
     function getMarketplaceInfo() {
         axios
-            .get("http://127.0.0.1:8080/api/marketplace")
-            .then((res) => setMarketplaceData(res.data))
+            .get("http://127.0.0.1:8080/api/categories")
+            .then((res) => setCategories(res.data))
             .catch((error) => console.log(error));
     }
 
@@ -158,10 +164,10 @@ export default function AppsTable() {
     ]);
 
     return (
-        <Container sx={{ marginBottom: "100px" }}>
+        <Container sx={{ marginBottom: "100px", marginTop: "50px" }}>
             <Box
                 sx={{
-                    minWidth: 150,
+                    minWidth: 200,
                     marginRight: "10px",
                     marginBottom: "10px",
                     float: "left",
@@ -260,6 +266,10 @@ export default function AppsTable() {
                     </Select>
                 </FormControl>
             </Box>
+
+            <Button sx={{ marginTop: "10px" }} onClick={handleClearFilters}>
+                Clear Filters
+            </Button>
 
             <TableContainer component={Paper}>
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">

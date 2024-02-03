@@ -37,29 +37,15 @@ const ShopifyMarketplace = mongoose.model(
 );
 
 app.get("/api/apps", async (req, res) => {
-    // const page = parseInt(req.query.page);
-    // const pageSize = parseInt(req.query.pageSize);
-    // const category = req.query.category;
-    // const rating = req.query.rating;
-
     const filter = {};
     filter.problems = { $not: { $size: 0 } };
-    // if (category) filter.categories = { $in: [category] };
-    // if (rating) filter.rating = { $gte: rating, $lt: Number(rating) + 1 };
-
-    // Calculate the start and end indexes for the requested page
-    // const startIndex = (page - 1) * pageSize;
-    // const endIndex = page * pageSize;
-
     const apps = await ShopifyApp.find(filter);
-    // const appsSubset = apps.slice(startIndex, endIndex);
-
     res.send(apps);
 });
 
-app.get("/api/marketplace", async (req, res) => {
-    const marketplaceInfo = await ShopifyMarketplace.findOne();
-    res.send(marketplaceInfo);
+app.get("/api/categories", async (req, res) => {
+    const marketplace = await ShopifyMarketplace.findOne();
+    res.send(marketplace.categories);
 });
 
 const host = "0.0.0.0";
