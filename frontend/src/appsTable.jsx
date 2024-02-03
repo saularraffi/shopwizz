@@ -164,7 +164,7 @@ export default function AppsTable() {
     ]);
 
     return (
-        <Container sx={{ marginBottom: "100px", marginTop: "50px" }}>
+        <Container sx={{ marginBottom: "100px" }}>
             <Box
                 sx={{
                     minWidth: 200,
