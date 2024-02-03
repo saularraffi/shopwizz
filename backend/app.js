@@ -19,7 +19,7 @@ const ShopifyAppSchema = mongoose.Schema({
     developerName: String,
     developerLink: String,
     dateLaunched: String,
-    categories: String,
+    categories: Array,
     pricePlans: Object,
     reviews: Object,
 });
@@ -37,23 +37,24 @@ const ShopifyMarketplace = mongoose.model(
 );
 
 app.get("/api/apps", async (req, res) => {
-    const page = parseInt(req.query.page);
-    const pageSize = parseInt(req.query.pageSize);
-    const category = req.query.category;
-    const rating = req.query.rating;
+    // const page = parseInt(req.query.page);
+    // const pageSize = parseInt(req.query.pageSize);
+    // const category = req.query.category;
+    // const rating = req.query.rating;
 
     const filter = {};
-    if (category) filter.categories = { $in: [category] };
-    if (rating) filter.rating = { $gte: rating, $lt: Number(rating) + 1 };
+    filter.problems = { $not: { $size: 0 } };
+    // if (category) filter.categories = { $in: [category] };
+    // if (rating) filter.rating = { $gte: rating, $lt: Number(rating) + 1 };
 
     // Calculate the start and end indexes for the requested page
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = page * pageSize;
+    // const startIndex = (page - 1) * pageSize;
+    // const endIndex = page * pageSize;
 
     const apps = await ShopifyApp.find(filter);
-    const appsSubset = apps.slice(startIndex, endIndex);
+    // const appsSubset = apps.slice(startIndex, endIndex);
 
-    res.send(appsSubset);
+    res.send(apps);
 });
 
 app.get("/api/marketplace", async (req, res) => {

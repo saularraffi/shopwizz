@@ -27,38 +27,76 @@ const tableHeaderStyle = {
 
 export default function AppsTable() {
     const [apps, setApps] = useState([]);
+    const [visibleApps, setVisibleApps] = useState([]);
     const [marketplaceData, setMarketplaceData] = useState({});
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [sortType, setSortType] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("");
-    const [selectedRating, setSelectedRating] = useState(-1);
+    const [selectedSortType, setSelectedSortType] = useState(null);
+    const [selectedRating, setSelectedRating] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     const numberOfApps = marketplaceData?.numberOfApps || 0;
     const categories = marketplaceData?.categories;
     const numberOfPages = Math.ceil(numberOfApps / itemsPerPage);
 
-    function getSortedApps(data, ascending) {
-        if (ascending) return [...data].sort((a, b) => a.rating - b.rating);
-        else return [...data].sort((a, b) => b.rating - a.rating);
+    function getSortedApps(appsList) {
+        switch (selectedSortType) {
+            case "RFI-DESCENDING":
+                return [...appsList].sort((a, b) => b.rfiScore - a.rfiScore);
+            case "RFI-ASCENDING":
+                return [...appsList].sort((a, b) => a.rfiScore - b.rfiScore);
+            case "RATING-DESCENDING":
+                return [...appsList].sort((a, b) => b.rating - a.rating);
+            case "RATING-ASCENDING":
+                return [...appsList].sort((a, b) => a.rating - b.rating);
+        }
+        return appsList;
     }
 
-    function handleSortByRating(event) {
-        const ascending = event.target.value === "ASCENDING";
-        setSortType(event.target.value);
-        const sortedApps = getSortedApps(apps, ascending);
-        setApps(sortedApps);
+    function filterByCategory(appsList) {
+        let filtered = [];
+
+        if (selectedCategory === "None" || !selectedCategory) {
+            filtered = appsList.filter(() => true);
+        } else {
+            filtered = appsList.filter((app) =>
+                app.categories.includes(selectedCategory)
+            );
+        }
+        return filtered;
     }
 
-    function handleCategorySelection(event) {
-        setSelectedCategory(event.target.value);
+    function filterByRating(appsList) {
+        let filtered = [];
+
+        if (selectedRating == 0 || !selectedRating) {
+            filtered = appsList.filter(() => true);
+        } else {
+            filtered = appsList.filter(
+                (app) =>
+                    app.rating < selectedRating + 1 &&
+                    app.rating >= selectedRating
+            );
+        }
+        return filtered;
     }
 
     function handleRatingSelection(event) {
-        setSelectedRating(event.target.value);
+        const rating = event.target.value;
+        setSelectedRating(rating);
     }
 
-    function handlePagination(event, value) {
+    function handleCategorySelection(event) {
+        const category = event.target.value;
+        setSelectedCategory(category);
+    }
+
+    function handleSortTypeSelection(event) {
+        const sortType = event.target.value;
+        setSelectedSortType(sortType);
+    }
+
+    function handlePagination(_, value) {
         setPage(value);
     }
 
@@ -66,25 +104,32 @@ export default function AppsTable() {
         setItemsPerPage(event.target.value);
     }
 
+    function handleSetVisibleApps(appsList) {
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = page * itemsPerPage;
+        const appsSubset = appsList.slice(startIndex, endIndex);
+
+        setVisibleApps(appsSubset);
+    }
+
+    function filterApps() {
+        const filter1 = filterByRating(apps);
+        const filter2 = filterByCategory(filter1);
+        const filter3 = getSortedApps(filter2);
+
+        return filter3;
+    }
+
     function getApps() {
-        const categoryQuery =
-            selectedCategory !== "" && selectedCategory != "None"
-                ? `&category=${selectedCategory}`
-                : "";
-
-        const ratingQuery =
-            selectedRating !== -1 ? `&rating=${selectedRating}` : "";
-
         axios
-            .get(
-                `http://127.0.0.1:8080/api/apps?page=${page}&pageSize=${itemsPerPage}${categoryQuery}${ratingQuery}`
-            )
+            .get("http://127.0.0.1:8080/api/apps?")
             .then((res) => {
-                const apps =
-                    sortType === ""
-                        ? res.data
-                        : getSortedApps(res.data, sortType === "ASCENDING");
-                setApps(apps);
+                const sortedByRfi = res.data.sort(
+                    (a, b) => b.rfiScore - a.rfiScore
+                );
+
+                setApps(sortedByRfi);
+                handleSetVisibleApps(sortedByRfi);
             })
             .catch((error) => console.log(error));
     }
@@ -98,17 +143,56 @@ export default function AppsTable() {
 
     useEffect(() => {
         getApps();
-    }, [itemsPerPage, page, sortType, selectedCategory, selectedRating]);
-
-    useEffect(() => {
         getMarketplaceInfo();
     }, []);
+
+    useEffect(() => {
+        const filtered = filterApps();
+        handleSetVisibleApps(filtered);
+    }, [
+        selectedRating,
+        selectedCategory,
+        selectedSortType,
+        page,
+        itemsPerPage,
+    ]);
 
     return (
         <Container sx={{ marginBottom: "100px" }}>
             <Box
                 sx={{
-                    minWidth: 120,
+                    minWidth: 150,
+                    marginRight: "10px",
+                    marginBottom: "10px",
+                    float: "left",
+                }}
+            >
+                <FormControl fullWidth>
+                    <InputLabel>Sort By</InputLabel>
+                    <Select
+                        label="Sort By"
+                        onChange={handleSortTypeSelection}
+                        value={selectedSortType}
+                    >
+                        <MenuItem value={"RFI-DESCENDING"}>
+                            RFI Score - High to Low
+                        </MenuItem>
+                        <MenuItem value={"RFI-ASCENDING"}>
+                            RFI Score - Low to High
+                        </MenuItem>
+                        <MenuItem value={"RATING-DESCENDING"}>
+                            Rating - High to Low
+                        </MenuItem>
+                        <MenuItem value={"RATING-ASCENDING"}>
+                            Rating - Low to High
+                        </MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+
+            <Box
+                sx={{
+                    minWidth: 175,
                     maxWidth: 60,
                     marginRight: "10px",
                     marginBottom: "10px",
@@ -116,10 +200,40 @@ export default function AppsTable() {
                 }}
             >
                 <FormControl fullWidth>
-                    <InputLabel>Sort</InputLabel>
-                    <Select label="Sort" onChange={handleSortByRating}>
-                        <MenuItem value={"ASCENDING"}>Ascending</MenuItem>
-                        <MenuItem value={"DESCENDING"}>Descending</MenuItem>
+                    <InputLabel>Rating Filter</InputLabel>
+                    <Select
+                        label="Rating Filter"
+                        onChange={handleRatingSelection}
+                        value={selectedRating}
+                    >
+                        <MenuItem value={0}>None</MenuItem>
+                        <MenuItem value={1}>
+                            1.0 <StarIcon sx={{ color: "#EAD419" }} />
+                        </MenuItem>
+                        <MenuItem value={2}>
+                            2.0
+                            {Array.from(Array(2), (e, i) => (
+                                <StarIcon key={i} sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={3}>
+                            3.0
+                            {Array.from(Array(3), (e, i) => (
+                                <StarIcon key={i} sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={4}>
+                            4.0
+                            {Array.from(Array(4), (e, i) => (
+                                <StarIcon key={i} sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
+                        <MenuItem value={5}>
+                            5.0
+                            {Array.from(Array(5), (e, i) => (
+                                <StarIcon key={i} sx={{ color: "#EAD419" }} />
+                            ))}
+                        </MenuItem>
                     </Select>
                 </FormControl>
             </Box>
@@ -133,10 +247,11 @@ export default function AppsTable() {
                 }}
             >
                 <FormControl fullWidth>
-                    <InputLabel>Categories</InputLabel>
+                    <InputLabel>Category Filter</InputLabel>
                     <Select
-                        label="Categories"
+                        label="Category Filter"
                         onChange={handleCategorySelection}
+                        value={selectedCategory}
                     >
                         <MenuItem value="None">None</MenuItem>
                         {categories?.map((category) => (
@@ -146,55 +261,13 @@ export default function AppsTable() {
                 </FormControl>
             </Box>
 
-            <Box
-                sx={{
-                    minWidth: 120,
-                    maxWidth: 60,
-                    marginRight: "10px",
-                    marginBottom: "10px",
-                    float: "left",
-                }}
-            >
-                <FormControl fullWidth>
-                    <InputLabel>Rating</InputLabel>
-                    <Select label="Rating" onChange={handleRatingSelection}>
-                        <MenuItem value={-1}>None</MenuItem>
-                        <MenuItem value={1}>
-                            1.0 <StarIcon sx={{ color: "#EAD419" }} />
-                        </MenuItem>
-                        <MenuItem value={2}>
-                            2.0
-                            {Array.from(Array(2), (e, i) => (
-                                <StarIcon sx={{ color: "#EAD419" }} />
-                            ))}
-                        </MenuItem>
-                        <MenuItem value={3}>
-                            3.0
-                            {Array.from(Array(3), (e, i) => (
-                                <StarIcon sx={{ color: "#EAD419" }} />
-                            ))}
-                        </MenuItem>
-                        <MenuItem value={4}>
-                            4.0
-                            {Array.from(Array(4), (e, i) => (
-                                <StarIcon sx={{ color: "#EAD419" }} />
-                            ))}
-                        </MenuItem>
-                        <MenuItem value={5}>
-                            5.0
-                            {Array.from(Array(5), (e, i) => (
-                                <StarIcon sx={{ color: "#EAD419" }} />
-                            ))}
-                        </MenuItem>
-                    </Select>
-                </FormControl>
-            </Box>
-
             <TableContainer component={Paper}>
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
                     <TableHead>
                         <TableRow>
-                            <TableCell></TableCell>
+                            <TableCell style={tableHeaderStyle}>
+                                RFI Score
+                            </TableCell>
                             <TableCell style={tableHeaderStyle}>
                                 Image
                             </TableCell>
@@ -210,7 +283,7 @@ export default function AppsTable() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {apps?.map((row, index) => (
+                        {visibleApps?.map((row) => (
                             <TableRow
                                 key={row.name}
                                 sx={{
@@ -219,7 +292,7 @@ export default function AppsTable() {
                                     },
                                 }}
                             >
-                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>{row.rfiScore}</TableCell>
                                 <TableCell component="th" scope="row">
                                     <img
                                         style={{ width: "60px" }}
