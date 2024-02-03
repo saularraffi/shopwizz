@@ -21,7 +21,6 @@ import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 
 import StarIcon from "@mui/icons-material/Star";
-import { pink } from "@mui/material/colors";
 
 const tableHeaderStyle = {
     fontWeight: "bold",
